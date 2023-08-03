@@ -40,3 +40,12 @@
   - 코드 실행을 통해 기대되는 결과(outcome) 정의
   - 기대값에 대한 결과를 매칭
   - 모든 가능한 기대값 / 상황 커버 가능 (sync / async 등)
+
+## CLI 옵션
+모든 명령은 ```vitest```로 시작
+| 옵션 | 설명 |
+|-|-|
+|(없음)| 감시 모드로 실행 |
+| run | 감시 없이 실행 |
+| reporter &lt;name&gt; | 자세한 설명 추가<br>default, verbose, dot, junit, json 옵션 |
+| globals | 테스트 파일 내에서 전역 사용(import X) |
