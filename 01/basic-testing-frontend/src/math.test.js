@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { add } from './math.js';
-describe("test: math.js", () => {
+describe("add func", () => {
   it("should summarize all values in array", () => {
     // Arrange
     const numbers = [1,2]; // 이유 없이 복잡하게 만들지 마

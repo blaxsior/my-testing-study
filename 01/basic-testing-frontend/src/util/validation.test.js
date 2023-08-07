@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { validateNumber, validateStringNotEmpty } from './validation.js';
 
-describe("validateStringNotEmpty", () => {
+describe("validateStringNotEmpty func", () => {
   it("should pass if length of string is not empty", () => {
     const value = 'invalid';
 
@@ -38,7 +38,7 @@ describe("validateStringNotEmpty", () => {
   })
 });
 
-describe("test: validateNumber", () => {
+describe("validateNumber func", () => {
   it("should throw error if argument is string", () => {
     const v1 = 'invalid';
     const v2 = '13';
