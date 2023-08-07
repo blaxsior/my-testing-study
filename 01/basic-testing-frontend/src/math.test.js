@@ -15,6 +15,14 @@ describe("test: math.js", () => {
     const result = add(values);
     expect(result).toBeNaN();
   });
+  it("should calculate correct sum if all elements of array are numeric string", () => {
+    const values = ['1', '2'];
+    const expected = values.reduce((a,b) => a + +b, 0);
+
+    const result = add(values);
+    
+    expect(result).toBe(expected);
+  })
   it("send empty array = 0", () => {
     const numbers = [];
     const expected = 0;
