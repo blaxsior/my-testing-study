@@ -6,7 +6,7 @@ describe("test: math.js", () => {
     const numbers = [1,2]; // 이유 없이 복잡하게 만들지 마
     const expected = numbers.reduce((a,b) => a + b, 0);
 
-    const result = add(); // Act
+    const result = add(numbers); // Act
     expect(result).toBe(expected); // Assert
   });
   it("should return NaN if at least one of values is not number type", () => {
@@ -33,10 +33,21 @@ describe("test: math.js", () => {
   it("should throw error if no array passed", () => {
     //https://jestjs.io/docs/expect#tothrowerror
     //래핑 안하면 assertion 수행 안됨
-    expect(() => {
+    const resultFn = () => {
       const result = add();
-    }).toThrow();
-  })
+    };
+
+    expect(resultFn).toThrow(/not iterable/);
+  });
+  it("should throw error if argument is not array", () => {
+    const resultFn = () => {
+      const result = add(13, 12);
+    };
+
+    // expect(resultFn).toThrow(TypeError);
+    expect(resultFn).toThrow(/is not iterable/);
+    // 등장할 클래스 / 문자열(에러 메시지) 정의 가능
+  });
 });
 
 // toBe: 동등성 비교( ===, 객체든 뭐든 )
