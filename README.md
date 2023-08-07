@@ -73,3 +73,39 @@ AAA 패턴을 이용하는 경우 코드에 대한 가독성과 이해가 좋아
   - 정상적인 입력 / 비정상적 입력 / 에러 발생 상황 등 다양한 경우를 고려해야 함
 - 테스팅은 반복적인 작업이다. 필요할 때마다 계속 추가 + 수정하자
   - 현재 작성한 테스트 코드는 현재 상황을 커버한다. 그러나 점차 개발이 진행됨에 따라 기존에 생각하지 못했던 케이스나, 완전히 새로운 케이스에 대한 대응이 필요할 수 있다. 이런 경우 추가적인 테스트 코드를 작성하여 유닛이 기대처럼 동작하는지 보장해야 한다.
+
+## 예시 코드
+
+### 일반적인 경우
+```javascript
+describe("add function", () => { // 01. 테스팅 대상 정의
+  it("should summarize all values in array", () => { // 02. 간략한 설명
+    // 03. Arrange
+    const numbers = [1,2]; // 이유 없이 복잡하게 만들지 마
+    const expected = numbers.reduce((a,b) => a + b, 0);
+    // 04. Act
+    const result = add(numbers);
+    // 05. Assert
+    expect(result).toBe(expected);
+  });
+});
+```
+- describe: 테스팅 대상을 명시, 계층 형태로 관리하는 목적으로 사용
+- it: 각 테스트케이스 및 간략한 설명을 정의
+- AAA pattern
+  - Arrange: 테스트에서 사용되는 값 / 환경 정의
+  - Act: 테스트 코드를 실행
+  - Assert: 테스트 결과를 검증
+
+### 에러 발생 체크
+```javascript
+it("should throw error if typeof argument === \'symbol\'", () => {
+  const value = Symbol('invalid');
+  const targetFn = () => {
+    const result = transformToNumber(value);
+  }
+  expect(targetFn).toThrow();
+})
+```
+- expect에 에러를 발생시키는 함수를 내부적으로 실행하는 래퍼 함수(targetFn)를 전달, toThrow로 검증
+- toThrow에 에러 생성자 / regex 등 전달해서 구체적인 에러 체크 가능
