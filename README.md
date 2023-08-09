@@ -90,7 +90,9 @@ describe("add function", () => { // 01. 테스팅 대상 정의
   });
 });
 ```
-- describe: 테스팅 대상을 명시, 계층 형태로 관리하는 목적으로 사용
+- describe
+  - 테스팅 대상을 명시, 계층 형태로 관리하는 목적으로 사용
+  - 간결하게 테스트 대상이 누군지 정도만 표현(이름, 타입 정도)
 - it: 각 테스트케이스 및 간략한 설명을 정의
 - AAA pattern
   - Arrange: 테스트에서 사용되는 값 / 환경 정의
@@ -109,3 +111,16 @@ it("should throw error if typeof argument === \'symbol\'", () => {
 ```
 - expect에 에러를 발생시키는 함수를 내부적으로 실행하는 래퍼 함수(targetFn)를 전달, toThrow로 검증
 - toThrow에 에러 생성자 / regex 등 전달해서 구체적인 에러 체크 가능
+### 부정하기
+```javascript
+it("should pass if typeof argument is number", () => {
+  const value = 0;
+
+  const validateNum = () => validateNumber(value);
+
+  expect(validateNum).not.toThrow();
+});
+```
+``expect().not``을 이용하여 실행 결과에 대한 부정 가능. 논리적으로 보면 기존 assertion에 not을 붙이는 느낌이 됨.
+- not.toThrow: 에러 안던짐
+- not.toBe: 그 값 말고는 다 됨 !(a===b)
