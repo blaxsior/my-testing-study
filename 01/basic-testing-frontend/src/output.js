@@ -9,7 +9,7 @@ export function generateResultText(result) {
   } else if (result !== 'no-calc') {
     resultText = 'Result: ' + result;
   }
-  return result;
+  return resultText;
 }
 
 export function generateSumResult(numberInputs) {
