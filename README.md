@@ -248,6 +248,148 @@ describe.concurrent("User class", () => {
   //테스트 / hooks 등...
 });
 ```
+
+# Side Effect
+함수가 결과값 이외에 다른 상태를 변경시키는 것으로, 함수가 전역변수 · 정적 변수 · 인자 · I/O 데이터를 수정하거나 사이드 이펙트를 가진 다른 함수에서 데이터를 읽어오는 경우에 해당한다. 특정 함수가 사이드이펙트를 가지는 경우 프로그램의 동작을 이해하기 어렵게 만든다.
+
+테스팅에서도 사이드 이펙트는 문제가 될 수 있다. 아래와 같은 함수를 고려하자.
+```javascript
+export default function writeData(data, filename) {
+  const storagePath = path.join(process.cwd(), 'data', filename);
+  return fs.writeFile(storagePath, data);
+}
+```
+writeData 함수는 data를 filename 파일에 쓰는 동작을 수행한다. 이때 우리는 직접 작성하지 않은 외부 / third-party API에 대해서는 테스팅하지 않으므로 fs.writeFile이 실제로 파일을 생성하는지 관심이 없다. 우리는 단지 우리가 작성한 코드가 잘 동작하는지만 궁금하다.
+
+여기서 문제는 writeFile과 같은 외부 의존성(우리가 작성하지 않은 코드)이 사이드 이펙트를 만든다는 점이다. 위 코드를 기존 방식으로 테스트하면 각 테스트마다 파일을 생성한다. 따라서 각 테스트 이후 파일을 삭제하는 작업이 동반되어야 한다. 이 과정에서 프로덕션 환경에서 실수로 다른 파일을 지운다면? 매우 큰 문제가 된다.
+
+파일 시스템 이외에도 함수 내부적으로 DB, 서버 API에 접근하고, 이를 변경한다면 이 역시 역시 사이드이펙트로 작용한다. 따라서 우리는 사이드이펙트가 발생하지 않도록 함수 테스트 과정에서 외부 의존성을 가짜로 만들기 위한 방법이 요구된다.
+
+## spies & mocks
+[참고 링크](https://stackoverflow.com/questions/52131231/simple-definition-of-stub-spy-fake-and-mock-in-unit-testing)
+
+- dummy: 파라미터로 전달되기는 하지만, 사용되지는 않는 객체. 파라미터 채우는 용도
+- fake: 실제로 동작하는 구현을 가지지만, 프로덕션에 적합하지 않은 shortcut
+  - ex: in memory test db
+- stub: 미리 만들어 둔 답변을 제공하는 객체. 일반적으로 테스트를 위해 프로그래밍 된 것 이외에는 전혀 반응하지 않는다.
+- spices: 어떻게 호출되었는지에 대한 일부 정보를 기록하는 스텁으로, 어떤 동작이 이루어졌는지 검증할 때 사용한다.
+  - ex: 이메일 서비스에서 메일 전송 횟수 기록
+- mocks: 호출하면 사전 정의된 명세대로 결과를 돌려주도록 프로그래밍 된 것. 예상치 못한 요청이 들어오면 에러를 던지고, 기대한 모든 요청이 들어왔는지 검증한다.
+
+수업 중 내용
+- spices: 함수에 대한 래퍼 또는 함수를 대체하는 비어 있는 대체물로, 함수가 어떻게 호출되었고, 어떤 변수를 받았는지 같은 정보를 기록한다. 함수가 뭘 하는지는 관심 없고 호출 여부만 궁금한 경우 사용할 수 있다. spy 객체는 원 객체를 대신한다.
+- mocks: 특정 api의 모듈 / 코드처럼 큰 단위로 대체하면서 원 함수에는 없는 테스트 용 로직을 제공하여 테스트를 돕는다.
+
+### stub vs mock
+https://martinfowler.com/articles/mocksArentStubs.html
+
+코드를 일부 발췌했습니다.
+- 기본 코드
+  ```java
+  // MailService
+  public interface MailService {
+  public void send (Message msg);
+  }
+  public class MailServiceStub implements MailService {
+    private List<Message> messages = new ArrayList<Message>();
+    public void send (Message msg) {
+      messages.add(msg);
+    }
+    public int numberSent() {
+      return messages.size();
+    }
+  }   
+  ```
+- stub: 상태 검증(호출된 결과를 판단)
+  ```java
+  class OrderStateTester {
+    //...
+    public void testOrderSendsMailIfUnfilled() {
+      Order order = new Order(TALISKER, 51);
+      MailServiceStub mailer = new MailServiceStub();
+      order.setMailer(mailer);
+      order.fill(warehouse);
+      assertEquals(1, mailer.numberSent());
+    }
+  }
+  ```
+- mock: 동작 검증(동작이 수행되었는지 판단)
+  ```java
+  class OrderInteractionTester {
+    // ...
+    public void testOrderSendsMailIfUnfilled() {
+      Order order = new Order(TALISKER, 51);
+      Mock warehouse = mock(Warehouse.class);
+      Mock mailer = mock(MailService.class);
+      order.setMailer((MailService) mailer.proxy());
+
+      mailer.expects(once()).method("send");
+      warehouse.expects(once()).method("hasInventory")
+        .withAnyArguments()
+        .will(returnValue(false));
+
+      order.fill((Warehouse) warehouse.proxy());
+    }
+  }
+  ```
+``stub``은 상태를 검증한다. 
+
+위 코드에서는 assertEqual을 이용하여 메일이 호출된 "횟수"를 비교하고 있으며, 이 숫자를 표현하기 위해 MailServiceStub 클래스는 MailService 인터페이스에 정의된 메서드 이외에 numberSent 메서드를 추가로 구현하고 있다. 즉 stub은 상태 기반 검증을 수행하며, 이러한 상태 비교를 위해 원 객체에 없는 추가적인 메서드를 구현하는 경우가 있다.  
+stub은 특정 객체를 대신하는 역할이므로, 검증은 assertion library을 이용해야 한다.
+
+``mock obj``의 경우 항상 동작을 검증한다. 
+
+특정 클래스에 대한 기대값 등을 지정할 수 있다. 지정한 기대값을 기반으로 자체적인 assertion 기능이 추가된다.
+
+정말 간단하게 mock = stub + verification이라고 이해했다.  
+좀 더 자세한 내용이 궁금하면 아래 링크들 참고.
+- https://stackoverflow.com/questions/346372/whats-the-difference-between-faking-mocking-and-stubbing
+- https://stackoverflow.com/questions/3459287/whats-the-difference-between-a-mock-stub
+- https://martinfowler.com/articles/mocksArentStubs.html
+
+
+## spies 예시
+```javascript
+export function generateReportData(logFn) {
+  const data = 'Some dummy data for this demo app';
+  if (logFn) {
+    logFn(data);
+  }
+
+  return data;
+}
+```
+logFn이 뭘 하는지는 관심 없고, 해당 함수가 호출되는지만 궁금하면 spies을 이용한다.
+```javascript
+describe('generateReportData func', () => {
+  it('should execute logFn if provided', () => {
+    const spyLogFn = vi.fn();
+    generateReportData(spyLogFn);
+
+    expect(spyLogFn).toBeCalled();
+  })
+})
+```
+
+## mock 예시
+``vi.mock(모듈이름)``을 작성하면 auto-mocking 알고리즘을 통해 해당 모듈을 찾아서 모듈 내 모든 함수를 empty spy function으로 대체한다.
+```javascript
+vi.mock('fs');
+describe("writeData func", () => {
+  it("should execute writeFile Method", async () => {
+    const testData = 'test';
+    const testFilename = 'test2.txt';
+
+    writeData(testData, testFilename);
+    expect(fs.writeFile).toBeCalled(); // spy function으로 대체됨!
+  });
+});
+```
+vi.mock의 특징은 다음과 같다.
+1. 어디에 코드를 작성하든 호이스팅되어 해당 파일 최상위(import보다)로 이동한다.
+2. vi.mock 선언은 프로덕션 수준에는 영향을 주지 않는다.(테스트에만 영향)
+3. vi.mock에 적은 모듈을 사용하는 다른 테스팅 파일이 있을 때, vi.mock 선언이 없는 테스트가 먼저 실행되도록 정렬된다.
+  - ex: A.test.js에서는 vi.mock('fs')를 선언했고, B.test.js에서는 하지 않았다면 B.test.js파일을 먼저 실행한다.
 # 예시 코드
 
 ## 일반적인 경우
@@ -301,6 +443,9 @@ it("should pass if typeof argument is number", () => {
 
 ## expect 함수들
 - toBe(v): === 동등성 비교 (같은 객체인지)
+- toBeCalled(): 호출되었는지 검사
+- toBeCalledTimes(num): 정확히 num번 호출되었는지
+- toBeCalledWith(...args): args 인자들과 함께 호출되었는지
 - toBeNaN(): NaN값인지 체크
 - toBeTypeOf(type): 값의 타입 비교
 - toContain(item): 배열 원소 / sub string으로 포함하는지
