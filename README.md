@@ -387,9 +387,73 @@ describe("writeData func", () => {
 ```
 vi.mock의 특징은 다음과 같다.
 1. 어디에 코드를 작성하든 호이스팅되어 해당 파일 최상위(import보다)로 이동한다.
+  - 호이스팅 되는 특성상 팩토리 외부 변수를 참조할 수 없다.
+  - 외부 변수를 참조하고 싶다면 호이스팅되지 않는 [vi.doMock](https://vitest.dev/api/vi.html#vi-domock) 이용
 2. vi.mock 선언은 프로덕션 수준에는 영향을 주지 않는다.(테스트에만 영향)
 3. vi.mock에 적은 모듈을 사용하는 다른 테스팅 파일이 있을 때, vi.mock 선언이 없는 테스트가 먼저 실행되도록 정렬된다.
-  - ex: A.test.js에서는 vi.mock('fs')를 선언했고, B.test.js에서는 하지 않았다면 B.test.js파일을 먼저 실행한다.
+  - ex: A.test.js에서는 vi.mock('fs')를 선언했고, B.test.js에서는 하지 않았다면 B.test.js파일을 먼저 실행
+```javascript
+// 실제 코드
+import path from 'path';
+import { promises as fs } from 'fs';
+
+export default function writeData(data, filename) {
+  const storagePath = path.join(process.cwd(), 'data', filename);
+  return fs.writeFile(storagePath, data);
+}
+// 테스트 파일 내 정의 된 mock 코드
+vi.mock('path', () => {
+  return {
+    default: {
+      join: (...args) => {
+        return args.at(-1);
+      }
+    }
+  };
+});
+```
+vi.mock의 두번째 인자로 팩토리를 넘기면 기본 동작을 변경할 수 있다. 위 코드는 path 모듈의 join 메서드가 마지막으로 들어온 인자를 넘기도록 mock을 구성한다.
+
+프로젝트 내에서 default export로 사용되는 경우 ``default: {}`` 로 한번 감싸 넘긴다. 위의 경우 writeData 함수가 정의된 파일에서 path 모듈을 default export로 사용하므로, default 프로퍼티로 감싸 사용해야 한다.
+### 원 함수 사용하기
+```javascript
+vi.mock('./path/to/module.js', async (importOriginal) => {
+  const mod = await importOriginal()
+  return {
+    ...mod,
+    // replace some exports
+    namedExport: vi.fn(),
+  }
+})
+```
+mock 함수는 모듈 내 모든 함수를 empty spy function으로 만든다. 만약 원 함수가 필요한 경우 importOriginal 함수를 이용하여 원래 모듈을 가져온다.
+### mock implementation 전역으로 사용하기
+vitest의 mock 참조 방식은 다음과 같다.
+1. ``vi.mock`` 에 제공된 팩토리가 있다면 사용한다.
+2. ``__mocks__`` 폴더에서 mocking 대상 모듈과 동일한 이름의 파일을 찾아 만약 있다면 사용한다.
+  - ``__mocks__`` 폴더는 각 모듈과 동일한 위치에 존재한다고 간주한다.
+    - ex 1: axios -> ``__mocks__/axios.js``
+    - ex 2: src/mod.js -> ``src/__mocks__/mod.js``
+3. 둘 다 없다면 [auto-mocking](https://vitest.dev/guide/mocking.html#automocking-algorithm) 한다.
+  - 모든 배열은 비운다.
+  - 모든 primitive, collection은 그대로 둔다.
+  - 모든 객체는 깊은 복사(deeply cloned)된다.
+  - 모든 클래스 인스턴스 및 프로토타입은 깊은 복사(deeply cloned)된다.
+
+위 참조 방식 중 ``__mocks__`` 폴더에 mock을 제공하는 방식을 이용하면 동일한 구현을 전역적으로 사용할 수 있다. ``toBeCalled`` 같은 assertion을 이용하고 싶다면 vi.fn으로 한번 감싸 spy function으로 만들어야 한다. 
+```javascript
+// __mocks__/file.js
+import {vi} from 'vitest';
+
+export const promises = {
+  writeFile: vi.fn((path, data) => {
+    return new Promise((resolve, reject) => {
+      resolve();
+    });
+  })
+};
+```
+
 # 예시 코드
 
 ## 일반적인 경우
