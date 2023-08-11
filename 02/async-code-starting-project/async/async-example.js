@@ -1,9 +1,17 @@
 import jwt from 'jsonwebtoken';
-
+/**
+ * 
+ * @param {string} userEmail 
+ * @param {(error: Error, token: string) => void} doneFn 
+ */
 export function generateToken(userEmail, doneFn) {
   jwt.sign({ email: userEmail }, 'secret123', doneFn);
 }
-
+/**
+ * 
+ * @param {string} userEmail 
+ * @returns {Promise<string>} promise
+ */
 export function generateTokenPromise(userEmail) {
   const promise = new Promise((resolve, reject) => {
     jwt.sign({ email: userEmail }, 'secret123', (error, token) => {
