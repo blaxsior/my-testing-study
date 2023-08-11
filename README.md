@@ -171,6 +171,59 @@ it("should throw error if at least one item  in array is empty string", () => {
 });
 ```
 통합 테스트는 vitest로 커버 가능
+
+# Async 코드 테스팅
+자바스크립트에서 비동기 코드는 콜백 또는 promise 기반이 있다.
+## 콜백 테스팅
+it에 전달하는 함수의 인자로 ``done`` 함수를 추가한다.
+```javascript
+describe("generateToken func", () => {
+  it("should generate token value", (done) => {
+    const testUserEmail = 'test@test.com';
+
+    generateToken(testUserEmail, (err, token) => {
+      try {
+        expect(token).toBeDefined();
+        done();
+      } catch(err) {
+        done(err);
+      }
+    })
+  });
+});
+```
+콜백 함수는 별도의 큐로 이동하여 시간이 오래 걸리는 작업이 종료된 후 메인 스레드로 돌아와 실행되는데, 테스팅 툴은 기본적으로 콜백이 실행되기를 기다리지 않는다. 따라서 it 함수가 콜백함수 종료 시점까지 대기할 수 있도록 알려주는 장치가 필요하다.  
+done 함수는 it 함수가 done이 호출되는 시점까지 대기하게 만든다. jest / vitest 등의 테스트 툴들은 에러가 던져졌는지를 기준으로 테스트 성공 여부를 판단하므로, 내부에서 에러가 발생하는 경우 done 함수의 인자로 넘겨 it이 콜백 함수의 실패를 알릴 수 있다.
+
+## 프로미스 테스팅
+프로미스는 resolve, reject 기반으로 동작하며 테스팅도 expect에 포함된 비슷한 키워드를 이용하여 처리할 수 있다. expect에 프로미스 객체를 전달하고, resolves / rejects를 이용한다.  
+```javascript
+it("should generate token vlaue", () => {
+  const testUserEmail = 'test@test.com';
+
+  return expect(generateTokenPromise(testUserEmail)).resolves.toBeDefined();
+});
+```
+프로미스 객체는 async / await 키워드를 이용하여 다룰 수도 있으며, 테스팅도 동일한 방식으로 처리 가능하다.
+```javascript
+it("should generate token vlaue", async () => {
+  const testUserEmail = 'test@test.com';
+
+  const token = await generateTokenPromise(testUserEmail);
+  
+  expect(token).toBeDefined();
+});
+```
+프로미스가 처리될 때까지 대기하는 것을 보장하기 위해 expect를 return해야 한다. async / await 구문을 이용하는 경우에는 필요 없다.  
+공식 문서에서는 resolves / rejects을 이용하는 경우에도 async / await로 대기한다.
+- https://vitest.dev/api/expect.html#resolves
+```javascript
+it("should generate token vlaue", async () => {
+  const testUserEmail = 'test@test.com';
+
+  await expect(generateTokenPromise(testUserEmail)).resolves.toBeDefined();
+});
+```
 # 예시 코드
 
 ## 일반적인 경우
