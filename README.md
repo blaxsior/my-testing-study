@@ -224,6 +224,30 @@ it("should generate token vlaue", async () => {
   await expect(generateTokenPromise(testUserEmail)).resolves.toBeDefined();
 });
 ```
+
+# hooks
+테스트들에 대해 동일한 설정이 반복되는 경우 중복을 피하기 위해 이들을 일종의 전역 변수로 분리하고 싶을 수 있다. 그러나 단순히 코드를 분리하면 동일한 객체를 여러 테스트에서 순서대로 사용하게 되므로 테스트를 수행할 때마다 상태가 변경되어 모든 테스트에 대해 동일한 초기 상태를 보장할 수 없게 된다.
+
+hook을 이용하면 각 테스트마다 환경을 초기화하여 사용하도록 구성할 수 있다.
+## 종류
+- 전체에 대해 1번 수행
+  - beforeAll: 테스트 시작 전 1번 실행
+  - afterAll: 테스트가 모두 종료된 후 1번 실행
+- 각 테스트에 대해 수행
+  - beforeEach: 각 테스트 시작 전에 실행
+  - afterEach: 각 테스트 종료 후에 실행
+
+# concurrent testing
+- 다른 파일: 기본적으로 병렬적으로 테스팅한다
+- 동일 파일: 기본적으로는 테스트가 정의된 순서대로 처리하나, ``concurrent`` 를 이용하면 동일 파일 내에서도 병렬적으로 처리하도록 구성 가능하다.  
+
+``concurrent``는 describe, it 수준에서 사용할 수 있다.  
+공식 문서 참고: https://vitest.dev/guide/features.html#running-tests-concurrently
+```javascript
+describe.concurrent("User class", () => {
+  //테스트 / hooks 등...
+});
+```
 # 예시 코드
 
 ## 일반적인 경우
@@ -283,6 +307,7 @@ it("should pass if typeof argument is number", () => {
 - toEqual(v): 구성만 같으면 ok (객체 자체 x 속성만 같으면 됨)
 - toEqual(expect.arrayContaining(expected)): 배열이 동일 원소 가짐
 - toThrow(err?): 에러를 던지는지 체크
+- toHaveProperty(name): 특정 프로퍼티 가지는지 검사
 
 # 잡동사니
 ## code coverage
