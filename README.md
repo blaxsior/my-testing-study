@@ -500,6 +500,47 @@ it('should throw HttpError if fail to fetch', async () => {
   });
 
 ```
+# testing environment
+javascript가 구동하는 환경은 다양하므로, 제공해야 하는 테스팅 환경도 다양하다. 테스팅 환경마다 사용 가능한 API가 다르다는 점을 잘 생각하자.
+- nodejs
+  - 기본 환경
+  - Nodejs API & 모듈 사용 가능
+  - 브라우저 API 사용 불가
+- JSDOM / (Happy-DOM)
+  - nodejs에서 동작하는 virtual DOM
+  - 브라우저 API / DOM 사용 가능
+  - 프론트엔드 테스팅에 적합
+테스팅 설정 관련 문서는 [여기](https://vitest.dev/guide/environment.html#test-environment)
+## 환경 설정
+- 키워드: ``node``, ``jsdom``, ``happy-dom``, ``edge-runtime``
+- 최상위에 ``// @vitest-environment [keyword]`` 명시
+```javascript
+// @vitest-environment happy-dom
+// 테스팅 코드 파일 최상위에 명시
+
+import {describe, it, expect} from 'vitest';
+//...
+```
+## dom 코드 예시
+```javascript
+// @vitest-environment happy-dom
+import { readFile } from 'fs/promises';
+import { resolve } from 'path';
+
+import { vi, describe, it, expect } from 'vitest';
+import { Window } from 'happy-dom';
+
+const htmlPath = resolve('index.html');
+const htmlTextContent = (await readFile(htmlPath)).toString();
+
+// 맨 위 주석 있으면 아래 코드는 필요 없음
+// const window = new Window();
+// const document = window.document;
+
+// vi.stubGlobal('document', document);
+```
+위와 같이 환경설정한 후 dom 다루듯이 사용 가능.  
+jsdom / happy-dom을 직접 사용하는 것은 상당히 많은 코드 작성을 요구하므로, 현재 강의에서는 DOM 관련 테스팅 수행을 위해 대신 testing library 라이브러리를 학습하여 사용할 것을 권장하고 있음.
 
 # 예시 코드
 
