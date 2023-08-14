@@ -453,6 +453,53 @@ export const promises = {
   })
 };
 ```
+### global value & function mock
+fetch, MutationObserver 같은 API는 특정 모듈에 속해있지 않으므로 ``vi.mock``나 ``__mocks__`` 사용 불가.  
+이런 경우 ``vi.stubGlobal을 이용하여 mock으로 대체가 가능.
+```javascript
+const fetchMockResult = { test: 'test' };
+const fetchMock = vi.fn();
+
+const rejectMessage = 'body is not a string';
+
+fetchMock.mockImplementation((URL, config) => {
+  return new Promise((resolve, reject) => {
+    if (typeof config.body !== 'string') {
+      return reject(rejectMessage);
+    }
+
+    const resolveObj = {
+      json: () => new Promise((resolve, reject) => {
+        resolve(fetchMockResult);
+      }),
+      ok: true
+    };
+
+    resolve(resolveObj);
+  });
+});
+vi.stubGlobal('fetch', fetchMock);
+```
+테스트할 때 함수 구현이 변경되어야 하는 경우 ``mockImplementationOnce``를 이용하면 해당 테스트(정확히는 1번 실행)에서만 특정 구현을 이용할 수도 있다.
+```javascript
+it('should throw HttpError if fail to fetch', async () => {
+    fetchMock.mockImplementationOnce((URL, config) => {
+      return new Promise((resolve, reject) => {
+        const rejectObj = {
+          json: () => new Promise((resolve, reject) => {
+            resolve(fetchMockResult);
+          }),
+          ok: false // 로직에 관련된 부분
+        };
+        resolve(rejectObj);
+      });
+    });
+    const input = '';
+
+    await expect(sendDataRequest(input)).rejects.toThrow(HttpError);
+  });
+
+```
 
 # 예시 코드
 
