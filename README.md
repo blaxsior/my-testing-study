@@ -198,7 +198,7 @@ done 함수는 it 함수가 done이 호출되는 시점까지 대기하게 만�
 ## 프로미스 테스팅
 프로미스는 resolve, reject 기반으로 동작하며 테스팅도 expect에 포함된 비슷한 키워드를 이용하여 처리할 수 있다. expect에 프로미스 객체를 전달하고, resolves / rejects를 이용한다.  
 ```javascript
-it("should generate token vlaue", () => {
+it("should generate token value", () => {
   const testUserEmail = 'test@test.com';
 
   return expect(generateTokenPromise(testUserEmail)).resolves.toBeDefined();

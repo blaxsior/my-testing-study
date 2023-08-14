@@ -17,13 +17,13 @@ describe("generateToken func", () => {
 });
 
 describe("generateTokenPromise func", () => {
-  it("should generate token vlaue", () => {
+  it("should generate token value", () => {
     const testUserEmail = 'test@test.com';
 
     return expect(generateTokenPromise(testUserEmail)).resolves.toBeDefined();
   });
 
-  it("should generate token vlaue", async () => {
+  it("should generate token value", async () => {
     const testUserEmail = 'test@test.com';
 
     const token = await generateTokenPromise(testUserEmail);
@@ -31,7 +31,7 @@ describe("generateTokenPromise func", () => {
     expect(token).toBeDefined();
   });
 
-  it("should generate token vlaue", async () => {
+  it("should generate token value", async () => {
     const testUserEmail = 'test@test.com';
 
     await expect(generateTokenPromise(testUserEmail)).resolves.toBeDefined();
